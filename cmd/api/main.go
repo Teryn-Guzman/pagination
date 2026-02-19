@@ -1,18 +1,26 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 const appVersion = "1.0.0"
 
 type serverConfig struct {
     port int 
     environment string
+    db struct {
+        dsn string
+    }
+
 }
 
 type applicationDependencies struct {
@@ -25,9 +33,22 @@ func main() {
     flag.IntVar(&settings.port, "port", 4000, "Server port")
     flag.StringVar(&settings.environment, "env", "development",
                   "Environment(development|staging|production)")
+    flag.StringVar(&settings.db.dsn, "db-dsn", "postgres://restaurant:restaurant@localhost/restaurant_management_db","PostgreSQL DSN")
+
     flag.Parse()
     
     logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+    db, err := openDB(settings)
+    if err != nil {
+    logger.Error(err.Error())
+    os.Exit(1)
+    }
+    defer db.Close()
+
+    logger.Info("database connection pool established")
+
+
 
     appInstance := &applicationDependencies {
         config: settings,
@@ -45,10 +66,28 @@ func main() {
     }
 
 
-logger.Info("starting server", "address", apiServer.Addr,
+    logger.Info("starting server", "address", apiServer.Addr,
                 "environment", settings.environment)
-    err := apiServer.ListenAndServe()
+    err = apiServer.ListenAndServe()
     logger.Error(err.Error())
-    os.Exit(1)
+    os.Exit(1)    
+} 
+    func openDB(settings serverConfig) (*sql.DB, error) {
+
+        db, err := sql.Open("postgres", settings.db.dsn)
+    if err != nil {
+        return nil, err
+    }
     
+    ctx, cancel := context.WithTimeout(context.Background(),
+                                       5 * time.Second)
+    defer cancel()
+    err = db.PingContext(ctx)
+    if err != nil {
+        db.Close()
+        return nil, err
+    }
+
+    return db, nil
+
 } 
