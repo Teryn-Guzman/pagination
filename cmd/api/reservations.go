@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Teryn-Guzman/Lab-3/internal/data"
+	"github.com/Teryn-Guzman/Lab-3/internal/validator"
 )
 
 func (a *applicationDependencies) createReservationHandler(
@@ -24,6 +25,7 @@ func (a *applicationDependencies) createReservationHandler(
 		a.badRequestResponse(w, r, err)
 		return
 	}
+	
 
 	parsedTime, err := time.Parse(time.RFC3339, incomingData.TimeSlot)
 	if err != nil {
@@ -39,6 +41,13 @@ func (a *applicationDependencies) createReservationHandler(
 		PartySize: incomingData.PartySize,
 		Status:    "confirmed",
 		CreatedAt: time.Now(),
+	}
+	v := validator.New()
+	data.ValidateReservation(v, &reservation)
+
+	if !v.IsEmpty() {
+		a.failedValidationResponse(w, r, v.Errors)
+		return
 	}
 
 	dataEnvelope := envelope{

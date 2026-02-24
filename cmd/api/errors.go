@@ -63,3 +63,8 @@ func (a *applicationDependencies)methodNotAllowedResponse(
 
    a.errorResponseJSON(w, r, http.StatusMethodNotAllowed, message)
 }
+func (a *applicationDependencies)failedValidationResponse(
+                                 w http.ResponseWriter, r *http.Request,
+                                 errors map[string]string) {
+     a.errorResponseJSON(w, r, http.StatusUnprocessableEntity, errors)
+}
