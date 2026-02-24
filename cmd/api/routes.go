@@ -15,6 +15,7 @@ func (a *applicationDependencies)routes() http.Handler  {
    router.MethodNotAllowed = http.HandlerFunc(a.methodNotAllowedResponse)
    // setup routes
    router.HandlerFunc(http.MethodPost, "/v1/customers", a.createCustomerHandler)
+   router.HandlerFunc(http.MethodGet, "/v1/customers/:id", a.displayCustomerHandler)
 
    return router
   

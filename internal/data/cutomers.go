@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/Teryn-Guzman/Lab-3/internal/validator"
@@ -48,6 +49,47 @@ func (m CustomerModel) Insert(customer *Customer) error {
 		&customer.PenaltyFlag,
 	)
 }
+func (m CustomerModel) Get(id int64) (*Customer, error) {
+
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT customer_id, first_name, last_name, email, phone,
+		       created_at, no_show_count, penalty_flag
+		FROM customers
+		WHERE customer_id = $1
+	`
+
+	var customer Customer
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
+		&customer.ID,
+		&customer.FirstName,
+		&customer.LastName,
+		&customer.Email,
+		&customer.Phone,
+		&customer.CreatedAt,
+		&customer.NoShowCount,
+		&customer.PenaltyFlag,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &customer, nil
+}
+
 func ValidateCustomer(v *validator.Validator, c *Customer) {
 
 	v.Check(c.FirstName != "", "first_name", "must be provided")

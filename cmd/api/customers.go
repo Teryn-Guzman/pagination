@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -51,6 +52,37 @@ func (a *applicationDependencies) createCustomerHandler(
 
 	err = a.writeJSON(w, http.StatusCreated,
 		envelope{"customer": customer}, headers)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+	}
+}
+func (a *applicationDependencies) displayCustomerHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	id, err := a.readIDParam(r)
+	if err != nil {
+		a.notFoundResponse(w, r)
+		return
+	}
+
+	customer, err := a.customerModel.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	data := envelope{
+		"customer": customer,
+	}
+
+	err = a.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)
 	}
