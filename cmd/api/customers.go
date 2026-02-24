@@ -211,3 +211,24 @@ func (a *applicationDependencies) deleteCustomerHandler(
 		a.serverErrorResponse(w, r, err)
 	}
 }
+func (a *applicationDependencies) listCustomersHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	// Retrieve all customers from the database
+	customers, err := a.customerModel.GetAll()
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+		return
+	}
+
+	//  Wrap the customers in an envelope and return JSON
+	data := envelope{
+		"customers": customers,
+	}
+
+	err = a.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+	}
+}

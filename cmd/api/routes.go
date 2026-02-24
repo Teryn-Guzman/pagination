@@ -18,6 +18,8 @@ func (a *applicationDependencies)routes() http.Handler  {
    router.HandlerFunc(http.MethodGet, "/v1/customers/:id", a.displayCustomerHandler)
    router.HandlerFunc(http.MethodPatch,"/v1/customers/:id", a.updateCustomerHandler)
    router.HandlerFunc(http.MethodDelete,"/v1/customers/:id", a.deleteCustomerHandler)
+   router.HandlerFunc(http.MethodGet,"/v1/customers", a.listCustomersHandler)
+
    return router
   
 }

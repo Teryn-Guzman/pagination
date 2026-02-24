@@ -177,3 +177,54 @@ func ValidateCustomer(v *validator.Validator, c *Customer) {
 		v.Check(len(c.Email) <= 255, "email", "must not exceed 255 characters")
 	}
 }
+
+func (m CustomerModel) GetAll() ([]*Customer, error) {
+	// SQL query to get all customers
+	query := `
+		SELECT customer_id, first_name, last_name, email, phone,
+		       created_at, no_show_count, penalty_flag
+		FROM customers
+		ORDER BY customer_id
+	`
+
+	//  Create a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	//  Execute the query
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	//  Prepare slice to store customers
+	customers := []*Customer{}
+
+	//  Iterate over rows
+	for rows.Next() {
+		var c Customer
+		err := rows.Scan(
+			&c.ID,
+			&c.FirstName,
+			&c.LastName,
+			&c.Email,
+			&c.Phone,
+			&c.CreatedAt,
+			&c.NoShowCount,
+			&c.PenaltyFlag,
+		)
+		if err != nil {
+			return nil, err
+		}
+		customers = append(customers, &c)
+	}
+
+	//  Check for errors during iteration
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	//  Return the list of customers
+	return customers, nil
+}
