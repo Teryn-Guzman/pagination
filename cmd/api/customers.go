@@ -219,6 +219,7 @@ func (a *applicationDependencies) listCustomersHandler(
 	var queryParametersData struct {
 		FirstName string
 		LastName  string
+		data.Filters
 	}
 
 	// Get the query parameters from the URL
@@ -237,10 +238,27 @@ func (a *applicationDependencies) listCustomersHandler(
 		"",
 	)
 
+	// Create a new validator instance
+   	v := validator.New()
+
+	queryParametersData.Filters.Page = a.getSingleIntegerParameter(
+                                       queryParameters, "page", 1, v)
+    queryParametersData.Filters.PageSize = a.getSingleIntegerParameter(
+                                       queryParameters, "page_size", 10, v)
+ 
+	// Check if our filters are valid
+    data.ValidateFilters(v, queryParametersData.Filters)
+    if !v.IsEmpty() {
+       a.failedValidationResponse(w, r, v.Errors)
+       return
+   }
+
+
 	//  Call the model's GetAll with optional filters
 	customers, err := a.customerModel.GetAll(
 		queryParametersData.FirstName,
 		queryParametersData.LastName,
+		queryParametersData.Filters,
 	)
 	if err != nil {
 		a.serverErrorResponse(w, r, err)

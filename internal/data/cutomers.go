@@ -178,7 +178,7 @@ func ValidateCustomer(v *validator.Validator, c *Customer) {
 	}
 }
 
-func (m CustomerModel) GetAll(firstName string, lastName string) ([]*Customer, error) {
+func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters) ([]*Customer, error) {
 	// SQL query to get all customers with optional filtering by first_name and last_name
 	query := `
 		SELECT customer_id, first_name, last_name, email, phone,
@@ -187,6 +187,7 @@ func (m CustomerModel) GetAll(firstName string, lastName string) ([]*Customer, e
 		WHERE ($1 = '' OR first_name ILIKE '%' || $1 || '%')
 		  AND ($2 = '' OR last_name ILIKE '%' || $2 || '%')
 		ORDER BY customer_id
+		LIMIT $3 OFFSET $4
 	`
 
 	// Create a context with timeout
@@ -194,7 +195,7 @@ func (m CustomerModel) GetAll(firstName string, lastName string) ([]*Customer, e
 	defer cancel()
 
 	// Execute the query
-	rows, err := m.DB.QueryContext(ctx, query, firstName, lastName)
+	rows, err := m.DB.QueryContext(ctx, query, firstName, lastName, filters.limit(), filters.offset())
 	if err != nil {
 		return nil, err
 	}
