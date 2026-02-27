@@ -178,10 +178,10 @@ func ValidateCustomer(v *validator.Validator, c *Customer) {
 	}
 }
 
-func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters) ([]*Customer, error) {
+func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters) ([]*Customer, Metadata, error) {
 	// SQL query to get all customers with optional filtering by first_name and last_name
 	query := `
-		SELECT customer_id, first_name, last_name, email, phone,
+		SELECT COUNT(*) OVER(), customer_id, first_name, last_name, email, phone,
 		       created_at, no_show_count, penalty_flag
 		FROM customers
 		WHERE ($1 = '' OR first_name ILIKE '%' || $1 || '%')
@@ -197,10 +197,11 @@ func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters
 	// Execute the query
 	rows, err := m.DB.QueryContext(ctx, query, firstName, lastName, filters.limit(), filters.offset())
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 	defer rows.Close()
-
+	totalRecords := 0
+	
 	// Prepare slice to store customers
 	customers := []*Customer{}
 
@@ -208,6 +209,7 @@ func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters
 	for rows.Next() {
 		var c Customer
 		err := rows.Scan(
+			&totalRecords,
 			&c.ID,
 			&c.FirstName,
 			&c.LastName,
@@ -218,16 +220,17 @@ func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters
 			&c.PenaltyFlag,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 		customers = append(customers, &c)
 	}
 
 	// Check for errors during iteration
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	// Return the list of customers
-	return customers, nil
-}
+	// Calculate metadata
+	metadata := calculateMetaData(totalRecords, filters.Page, filters.PageSize)
+	return customers, metadata, nil
+	}

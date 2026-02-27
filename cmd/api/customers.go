@@ -255,7 +255,7 @@ func (a *applicationDependencies) listCustomersHandler(
 
 
 	//  Call the model's GetAll with optional filters
-	customers, err := a.customerModel.GetAll(
+	customers, metadata, err := a.customerModel.GetAll(
 		queryParametersData.FirstName,
 		queryParametersData.LastName,
 		queryParametersData.Filters,
@@ -268,6 +268,7 @@ func (a *applicationDependencies) listCustomersHandler(
 	//  Wrap the results in an envelope and return JSON
 	data := envelope{
 		"customers": customers,
+		"@metadata": metadata,
 	}
 
 	err = a.writeJSON(w, http.StatusOK, data, nil)
