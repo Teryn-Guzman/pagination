@@ -245,6 +245,12 @@ func (a *applicationDependencies) listCustomersHandler(
                                        queryParameters, "page", 1, v)
     queryParametersData.Filters.PageSize = a.getSingleIntegerParameter(
                                        queryParameters, "page_size", 10, v)
+
+	queryParametersData.Filters.Sort = a.getSingleQueryParameter(
+		queryParameters, "sort", "customer_id")
+
+	queryParametersData.Filters.SortSafeList = []string{"customer_id", "first_name",
+		"-customer_id", "-first_name"}
  
 	// Check if our filters are valid
     data.ValidateFilters(v, queryParametersData.Filters)

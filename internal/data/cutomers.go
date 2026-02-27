@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Teryn-Guzman/Lab-3/internal/validator"
@@ -180,15 +181,14 @@ func ValidateCustomer(v *validator.Validator, c *Customer) {
 
 func (m CustomerModel) GetAll(firstName string, lastName string, filters Filters) ([]*Customer, Metadata, error) {
 	// SQL query to get all customers with optional filtering by first_name and last_name
-	query := `
+	query := fmt.Sprintf(`
 		SELECT COUNT(*) OVER(), customer_id, first_name, last_name, email, phone,
 		       created_at, no_show_count, penalty_flag
 		FROM customers
-		WHERE ($1 = '' OR first_name ILIKE '%' || $1 || '%')
-		  AND ($2 = '' OR last_name ILIKE '%' || $2 || '%')
-		ORDER BY customer_id
-		LIMIT $3 OFFSET $4
-	`
+		WHERE ($1 = '' OR first_name ILIKE '%%' || $1 || '%%')
+		  AND ($2 = '' OR last_name ILIKE '%%' || $2 || '%%')
+		ORDER BY %s %s, customer_id ASC 
+        LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	// Create a context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
